@@ -17,18 +17,21 @@ import {
     Save,
     CheckCircle,
     Filter,
-    Calendar as CalendarIcon
+    Calendar as CalendarIcon,
+    Users
 } from "lucide-react";
 import { API_URL, BASE_URL } from "@/config";
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<"blogs" | "quotes">("blogs");
+    const [activeTab, setActiveTab] = useState<"blogs" | "quotes" | "contractors">("blogs");
     const [blogs, setBlogs] = useState<any[]>([]);
     const [quotes, setQuotes] = useState<any[]>([]);
+    const [contractors, setContractors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingBlog, setEditingBlog] = useState<any>(null);
+    const [editingContractor, setEditingContractor] = useState<any>(null);
     const [formData, setFormData] = useState({
         title: "",
         slug: "",
@@ -38,6 +41,14 @@ export default function AdminDashboard() {
         date: new Date().toISOString().split('T')[0],
         readTime: "5 min",
         category: "Renovaciones"
+    });
+
+    const [contractorForm, setContractorForm] = useState({
+        nombre: "",
+        telefono: "",
+        email: "",
+        direccion: "",
+        estado: "activo"
     });
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -65,15 +76,32 @@ export default function AdminDashboard() {
         setLoading(true);
         try {
             const blogsRes = await fetch(`${API_URL}/blogs`);
-            const blogsData = await blogsRes.json();
-            setBlogs(blogsData);
+            if (blogsRes.ok) {
+                const blogsData = await blogsRes.json();
+                setBlogs(Array.isArray(blogsData) ? blogsData : []);
+            }
 
             const token = localStorage.getItem("adminToken");
+
             const quotesRes = await fetch(`${API_URL}/quotes`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-            const quotesData = await quotesRes.json();
-            setQuotes(quotesData);
+            if (quotesRes.ok) {
+                const quotesData = await quotesRes.json();
+                setQuotes(Array.isArray(quotesData) ? quotesData : []);
+            } else if (quotesRes.status === 401 || quotesRes.status === 400) {
+                // If token is invalid or unauthorized, logout
+                // handleLogout();
+                // return;
+            }
+
+            const contractorsRes = await fetch(`${API_URL}/contractors`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (contractorsRes.ok) {
+                const contractorsData = await contractorsRes.json();
+                setContractors(Array.isArray(contractorsData) ? contractorsData : []);
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -102,46 +130,90 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleOpenModal = (blog: any = null) => {
+    const deleteContractor = async (id: number) => {
+        if (!confirm("¿Estás seguro de que quieres eliminar este contratista?")) return;
+
+        try {
+            const token = localStorage.getItem("adminToken");
+            await fetch(`${API_URL}/contractors/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleOpenModal = (item: any = null) => {
         setSelectedFile(null);
-        if (blog) {
-            setEditingBlog(blog);
-            setImagePreview(blog.image && blog.image.startsWith('/uploads/') ? `${BASE_URL}${blog.image}` : blog.image);
-            setFormData({
-                title: blog.title,
-                slug: blog.slug,
-                excerpt: blog.excerpt,
-                content: blog.content,
-                image: blog.image,
-                date: blog.date.split('T')[0],
-                readTime: blog.readTime,
-                category: blog.category
-            });
-        } else {
-            setEditingBlog(null);
-            setImagePreview("");
-            setFormData({
-                title: "",
-                slug: "",
-                excerpt: "",
-                content: "",
-                image: "",
-                date: new Date().toISOString().split('T')[0],
-                readTime: "5 min",
-                category: "Renovaciones"
-            });
+        if (activeTab === "blogs") {
+            if (item) {
+                setEditingBlog(item);
+                setImagePreview(item.image && item.image.startsWith('/uploads/') ? `${BASE_URL}${item.image}` : item.image);
+                setFormData({
+                    title: item.title,
+                    slug: item.slug,
+                    excerpt: item.excerpt,
+                    content: item.content,
+                    image: item.image,
+                    date: item.date.split('T')[0],
+                    readTime: item.readTime,
+                    category: item.category
+                });
+            } else {
+                setEditingBlog(null);
+                setImagePreview("");
+                setFormData({
+                    title: "",
+                    slug: "",
+                    excerpt: "",
+                    content: "",
+                    image: "",
+                    date: new Date().toISOString().split('T')[0],
+                    readTime: "5 min",
+                    category: "Renovaciones"
+                });
+            }
+        } else if (activeTab === "contractors") {
+            if (item) {
+                setEditingContractor(item);
+                setContractorForm({
+                    nombre: item.nombre,
+                    telefono: item.telefono || "",
+                    email: item.email || "",
+                    direccion: item.direccion || "",
+                    estado: item.estado || "activo"
+                });
+            } else {
+                setEditingContractor(null);
+                setContractorForm({
+                    nombre: "",
+                    telefono: "",
+                    email: "",
+                    direccion: "",
+                    estado: "activo"
+                });
+            }
         }
         setIsModalOpen(true);
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value,
-            // Auto-generate slug from title if title changes and no custom slug is set
-            ...(name === "title" && !editingBlog ? { slug: value.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') } : {})
-        }));
+        if (activeTab === "blogs") {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                // Auto-generate slug from title if title changes and no custom slug is set
+                ...(name === "title" && !editingBlog ? { slug: value.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') } : {})
+            }));
+        } else if (activeTab === "contractors") {
+            setContractorForm(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,44 +263,66 @@ export default function AdminDashboard() {
         setIsSubmitting(true);
         const token = localStorage.getItem("adminToken");
 
-        const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            if (key !== "image") {
-                data.append(key, formData[key as keyof typeof formData]);
-            }
-        });
-
-        if (selectedFile) {
-            data.append("image", selectedFile);
-        } else if (formData.image) {
-            data.append("image", formData.image);
-        }
-
         try {
-            const url = editingBlog
-                ? `${API_URL}/blogs/${editingBlog.id}`
-                : `${API_URL}/blogs`;
+            if (activeTab === "blogs") {
+                const data = new FormData();
+                Object.keys(formData).forEach(key => {
+                    if (key !== "image") {
+                        data.append(key, formData[key as keyof typeof formData]);
+                    }
+                });
 
-            const method = editingBlog ? "PUT" : "POST";
+                if (selectedFile) {
+                    data.append("image", selectedFile);
+                } else if (formData.image) {
+                    data.append("image", formData.image);
+                }
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: data
-            });
+                const url = editingBlog
+                    ? `${API_URL}/blogs/${editingBlog.id}`
+                    : `${API_URL}/blogs`;
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || "Failed to save blog");
+                const method = editingBlog ? "PUT" : "POST";
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: data
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "Failed to save blog");
+                }
+            } else if (activeTab === "contractors") {
+                const url = editingContractor
+                    ? `${API_URL}/contractors/${editingContractor.id}`
+                    : `${API_URL}/contractors`;
+
+                const method = editingContractor ? "PUT" : "POST";
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(contractorForm)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || "Failed to save contractor");
+                }
             }
 
             setIsModalOpen(false);
             fetchData();
         } catch (err) {
             console.error(err);
-            alert(err instanceof Error ? err.message : "Error saving blog");
+            alert(err instanceof Error ? err.message : "Error saving data");
         } finally {
             setIsSubmitting(false);
         }
@@ -260,6 +354,14 @@ export default function AdminDashboard() {
                         <MessageSquare className="h-5 w-5" />
                         Manage Quotes
                     </button>
+                    <button
+                        onClick={() => setActiveTab("contractors")}
+                        className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${activeTab === "contractors" ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                            }`}
+                    >
+                        <Users className="h-5 w-5" />
+                        Manage Contractors
+                    </button>
                 </nav>
 
                 <div className="mt-auto border-t border-border pt-6">
@@ -277,12 +379,12 @@ export default function AdminDashboard() {
             <main className="flex-1 p-8">
                 <header className="mb-8 flex items-center justify-between">
                     <h1 className="font-heading text-3xl font-bold capitalize">
-                        {activeTab === "blogs" ? "Blog Posts" : "Quote Requests"}
+                        {activeTab === "blogs" ? "Blog Posts" : activeTab === "quotes" ? "Quote Requests" : "Contractors"}
                     </h1>
-                    {activeTab === "blogs" ? (
+                    {activeTab === "blogs" || activeTab === "contractors" ? (
                         <Button onClick={() => handleOpenModal()} className="gap-2">
                             <Plus className="h-4 w-4" />
-                            New Post
+                            {activeTab === "blogs" ? "New Post" : "New Contractor"}
                         </Button>
                     ) : (
                         <div className="flex items-center gap-4">
@@ -337,7 +439,7 @@ export default function AdminDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {blogs.length === 0 ? (
+                                        {!Array.isArray(blogs) || blogs.length === 0 ? (
                                             <tr>
                                                 <td colSpan={4} className="px-6 py-10 text-center text-muted-foreground">
                                                     No blog posts found. Create your first one!
@@ -379,7 +481,7 @@ export default function AdminDashboard() {
                                     </tbody>
                                 </table>
                             </div>
-                        ) : (
+                        ) : activeTab === "quotes" ? (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead>
@@ -392,7 +494,7 @@ export default function AdminDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {filteredQuotes.length === 0 ? (
+                                        {!Array.isArray(filteredQuotes) || filteredQuotes.length === 0 ? (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
                                                     No quote requests found with these filters.
@@ -435,6 +537,66 @@ export default function AdminDashboard() {
                                     </tbody>
                                 </table>
                             </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border bg-muted/50">
+                                            <th className="px-6 py-4 font-semibold uppercase tracking-wider">Name</th>
+                                            <th className="px-6 py-4 font-semibold uppercase tracking-wider">Contact Info</th>
+                                            <th className="px-6 py-4 font-semibold uppercase tracking-wider">Address</th>
+                                            <th className="px-6 py-4 font-semibold uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-4 font-semibold uppercase tracking-wider text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {!Array.isArray(contractors) || contractors.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
+                                                    No contractors found. Add your first one!
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            contractors.map((contractor) => (
+                                                <tr key={contractor.id} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="px-6 py-4 font-medium">{contractor.nombre}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs text-muted-foreground">{contractor.email}</div>
+                                                        <div className="text-xs text-muted-foreground">{contractor.telefono}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-muted-foreground">{contractor.direccion}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${contractor.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                            }`}>
+                                                            {contractor.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                onClick={() => handleOpenModal(contractor)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => deleteContractor(contractor.id)}
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 )}
@@ -446,7 +608,10 @@ export default function AdminDashboard() {
                     <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-card p-8 shadow-2xl border border-border">
                         <div className="mb-6 flex items-center justify-between">
                             <h2 className="text-2xl font-bold font-heading">
-                                {editingBlog ? "Edit Blog Post" : "New Blog Post"}
+                                {activeTab === "blogs"
+                                    ? (editingBlog ? "Edit Blog Post" : "New Blog Post")
+                                    : (editingContractor ? "Edit Contractor" : "New Contractor")
+                                }
                             </h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
@@ -457,103 +622,171 @@ export default function AdminDashboard() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="title">Title</Label>
-                                    <Input
-                                        id="title"
-                                        name="title"
-                                        required
-                                        placeholder="Post Title"
-                                        value={formData.title}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="slug">Slug (URL)</Label>
-                                    <Input
-                                        id="slug"
-                                        name="slug"
-                                        required
-                                        placeholder="post-slug"
-                                        value={formData.slug}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="category">Category</Label>
-                                    <Input
-                                        id="category"
-                                        name="category"
-                                        required
-                                        placeholder="e.g. Renovaciones"
-                                        value={formData.category}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="date">Date</Label>
-                                    <Input
-                                        id="date"
-                                        name="date"
-                                        type="date"
-                                        required
-                                        value={formData.date}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="image">Blog Image (Max 250KB)</Label>
-                                <Input
-                                    id="image"
-                                    name="image"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    className="cursor-pointer"
-                                />
-                                {imagePreview && (
-                                    <div className="mt-4">
-                                        <Label className="mb-2 block text-xs">Image Preview:</Label>
-                                        <div className="aspect-video overflow-hidden rounded-lg border border-border shadow-inner bg-muted/50">
-                                            <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                            {activeTab === "blogs" ? (
+                                <>
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="title">Title</Label>
+                                            <Input
+                                                id="title"
+                                                name="title"
+                                                required
+                                                placeholder="Post Title"
+                                                value={formData.title}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="slug">Slug (URL)</Label>
+                                            <Input
+                                                id="slug"
+                                                name="slug"
+                                                required
+                                                placeholder="post-slug"
+                                                value={formData.slug}
+                                                onChange={handleInputChange}
+                                            />
                                         </div>
                                     </div>
-                                )}
-                                <p className="text-[10px] text-muted-foreground">
-                                    Nota: Si no seleccionas una imagen nueva, se mantendrá la actual (si existe).
-                                </p>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="excerpt">Excerpt (Short Description)</Label>
-                                <Textarea
-                                    id="excerpt"
-                                    name="excerpt"
-                                    required
-                                    placeholder="Brief summary of the post..."
-                                    value={formData.excerpt}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="category">Category</Label>
+                                            <Input
+                                                id="category"
+                                                name="category"
+                                                required
+                                                placeholder="e.g. Renovaciones"
+                                                value={formData.category}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="date">Date</Label>
+                                            <Input
+                                                id="date"
+                                                name="date"
+                                                type="date"
+                                                required
+                                                value={formData.date}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="content">Full Content</Label>
-                                <Textarea
-                                    id="content"
-                                    name="content"
-                                    required
-                                    placeholder="Detailed content of the post..."
-                                    className="min-h-[200px]"
-                                    value={formData.content}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="image">Blog Image (Max 250KB)</Label>
+                                        <Input
+                                            id="image"
+                                            name="image"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                            className="cursor-pointer"
+                                        />
+                                        {imagePreview && (
+                                            <div className="mt-4">
+                                                <Label className="mb-2 block text-xs">Image Preview:</Label>
+                                                <div className="aspect-video overflow-hidden rounded-lg border border-border shadow-inner bg-muted/50">
+                                                    <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Nota: Si no seleccionas una imagen nueva, se mantendrá la actual (si existe).
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="excerpt">Excerpt (Short Description)</Label>
+                                        <Textarea
+                                            id="excerpt"
+                                            name="excerpt"
+                                            required
+                                            placeholder="Brief summary of the post..."
+                                            value={formData.excerpt}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="content">Full Content</Label>
+                                        <Textarea
+                                            id="content"
+                                            name="content"
+                                            required
+                                            placeholder="Detailed content of the post..."
+                                            className="min-h-[200px]"
+                                            value={formData.content}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="nombre">Nombre</Label>
+                                            <Input
+                                                id="nombre"
+                                                name="nombre"
+                                                required
+                                                placeholder="Nombre Completo"
+                                                value={contractorForm.nombre}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="telefono">Teléfono</Label>
+                                            <Input
+                                                id="telefono"
+                                                name="telefono"
+                                                placeholder="Teléfono"
+                                                value={contractorForm.telefono}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email">Email</Label>
+                                            <Input
+                                                id="email"
+                                                name="email"
+                                                type="email"
+                                                placeholder="email@ejemplo.com"
+                                                value={contractorForm.email}
+                                                onChange={handleInputChange}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="estado">Estado</Label>
+                                            <select
+                                                id="estado"
+                                                name="estado"
+                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={contractorForm.estado}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="activo">Activo</option>
+                                                <option value="inactivo">Inactivo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="direccion">Dirección</Label>
+                                        <Textarea
+                                            id="direccion"
+                                            name="direccion"
+                                            placeholder="Dirección completa"
+                                            value={contractorForm.direccion}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+                                </>
+                            )}
 
                             <div className="flex justify-end gap-3 pt-4">
                                 <Button
@@ -570,7 +803,10 @@ export default function AdminDashboard() {
                                     ) : (
                                         <Save className="h-4 w-4" />
                                     )}
-                                    {editingBlog ? "Update Post" : "Create Post"}
+                                    {activeTab === "blogs"
+                                        ? (editingBlog ? "Update Post" : "Create Post")
+                                        : (editingContractor ? "Update Contractor" : "Create Contractor")
+                                    }
                                 </Button>
                             </div>
                         </form>
