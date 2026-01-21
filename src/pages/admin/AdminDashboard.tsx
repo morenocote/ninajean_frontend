@@ -18,8 +18,10 @@ import {
     CheckCircle,
     Filter,
     Calendar as CalendarIcon,
-    Users
+    Users,
+    Download
 } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { API_URL, BASE_URL } from "@/config";
 
 export default function AdminDashboard() {
@@ -258,6 +260,37 @@ export default function AdminDashboard() {
         return matchesStatus && matchesDate;
     });
 
+    const exportToExcel = (type: 'quotes' | 'contractors') => {
+        let dataToExport = [];
+        let fileName = "";
+
+        if (type === 'quotes') {
+            dataToExport = filteredQuotes.map(q => ({
+                'Nombre': q.fullName,
+                'Email': q.email,
+                'Teléfono': q.phone,
+                'Servicio': q.service,
+                'Estado': q.status === 'pending' ? 'Pendiente' : 'Finalizado',
+                'Fecha': new Date(q.created_at).toLocaleDateString()
+            }));
+            fileName = `Quotes_${new Date().toISOString().split('T')[0]}.xlsx`;
+        } else {
+            dataToExport = contractors.map(c => ({
+                'Nombre': c.nombre,
+                'Email': c.email,
+                'Teléfono': c.telefono,
+                'Dirección': c.direccion,
+                'Estado': c.estado === 'activo' ? 'Activo' : 'Inactivo'
+            }));
+            fileName = `Contractors_${new Date().toISOString().split('T')[0]}.xlsx`;
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+        XLSX.writeFile(workbook, fileName);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -381,13 +414,36 @@ export default function AdminDashboard() {
                     <h1 className="font-heading text-3xl font-bold capitalize">
                         {activeTab === "blogs" ? "Blog Posts" : activeTab === "quotes" ? "Quote Requests" : "Contractors"}
                     </h1>
-                    {activeTab === "blogs" || activeTab === "contractors" ? (
+                    {activeTab === "blogs" ? (
                         <Button onClick={() => handleOpenModal()} className="gap-2">
                             <Plus className="h-4 w-4" />
-                            {activeTab === "blogs" ? "New Post" : "New Contractor"}
+                            New Post
                         </Button>
+                    ) : activeTab === "contractors" ? (
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={() => exportToExcel('contractors')}
+                                variant="outline"
+                                className="gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export Excel
+                            </Button>
+                            <Button onClick={() => handleOpenModal()} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                New Contractor
+                            </Button>
+                        </div>
                     ) : (
                         <div className="flex items-center gap-4">
+                            <Button
+                                onClick={() => exportToExcel('quotes')}
+                                variant="outline"
+                                className="gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export Excel
+                            </Button>
                             <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 shadow-sm">
                                 <Filter className="h-4 w-4 text-muted-foreground" />
                                 <select
