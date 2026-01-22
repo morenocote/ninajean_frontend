@@ -155,7 +155,7 @@ export default function Services() {
               <Link to="/contact">Get a Free Estimate</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="tel:+14031234567">Call (403) 123-4567</a>
+              <a href="tel:+15872232483">Call +1 587-223-2483</a>
             </Button>
           </div>
         </div>

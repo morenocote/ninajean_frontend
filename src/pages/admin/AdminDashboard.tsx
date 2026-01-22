@@ -20,7 +20,8 @@ import {
     Calendar as CalendarIcon,
     Users,
     Download,
-    Menu
+    Menu,
+    Eye
 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { API_URL, BASE_URL } from "@/config";
@@ -46,6 +47,8 @@ export default function AdminDashboard() {
         readTime: "5 min",
         category: "Renovaciones"
     });
+
+    const [selectedQuote, setSelectedQuote] = useState<any>(null);
 
     const [contractorForm, setContractorForm] = useState({
         nombre: "",
@@ -199,6 +202,12 @@ export default function AdminDashboard() {
                     estado: "activo"
                 });
             }
+        } else if (activeTab === "quotes") {
+            if (item) {
+                setSelectedQuote(item);
+            } else {
+                setSelectedQuote(null);
+            }
         }
         setIsModalOpen(true);
     };
@@ -256,6 +265,22 @@ export default function AdminDashboard() {
         }
     };
 
+    const deleteQuote = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this quote request?")) return;
+
+        try {
+            const token = localStorage.getItem("adminToken");
+            await fetch(`${API_URL}/quotes/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting quote");
+        }
+    };
+
     const filteredQuotes = quotes.filter(quote => {
         const matchesStatus = quoteFilters.status === "all" || quote.status === quoteFilters.status;
         const matchesDate = !quoteFilters.date || new Date(quote.created_at).toISOString().split('T')[0] === quoteFilters.date;
@@ -268,12 +293,20 @@ export default function AdminDashboard() {
 
         if (type === 'quotes') {
             dataToExport = filteredQuotes.map(q => ({
-                'Nombre': q.fullName,
-                'Email': q.email,
+                'ID': q.id,
+                'Nombre Completo': q.fullName,
                 'Teléfono': q.phone,
+                'Email': q.email,
+                'Ciudad': q.city || 'N/A',
+                'Código Postal': q.postalCode || 'N/A',
                 'Servicio': q.service,
+                'Tipo de Propiedad': q.propertyType || 'N/A',
+                'Urgencia': q.urgency || 'N/A',
+                'Presupuesto': q.budget || 'N/A',
+                'Método de Contacto': q.contactMethod || 'N/A',
+                'Descripción': q.description || 'N/A',
                 'Estado': q.status === 'pending' ? 'Pendiente' : 'Finalizado',
-                'Fecha': new Date(q.created_at).toLocaleDateString()
+                'Fecha de Creación': new Date(q.created_at).toLocaleDateString()
             }));
             fileName = `Quotes_${new Date().toISOString().split('T')[0]}.xlsx`;
         } else {
@@ -638,31 +671,106 @@ export default function AdminDashboard() {
                                     ) : (
                                         filteredQuotes.map((quote) => (
                                             <div key={quote.id} className="bg-card border border-border rounded-lg p-4 shadow-sm">
-                                                <div className="flex justify-between items-start mb-2">
+                                                <div className="flex justify-between items-start mb-3">
                                                     <div className="flex-1">
-                                                        <h3 className="font-semibold text-base">{quote.fullName}</h3>
-                                                        <p className="text-xs text-muted-foreground">{quote.email}</p>
-                                                        <p className="text-xs text-muted-foreground">{quote.phone}</p>
+                                                        <h3 className="font-semibold text-base mb-1">{quote.fullName}</h3>
+                                                        <p className="text-xs text-muted-foreground">{quote.service}</p>
                                                     </div>
                                                     <span className={`rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap ml-2 ${quote.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                                                         {quote.status === 'pending' ? 'Pendiente' : 'Finalizado'}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground mb-1">{quote.service}</p>
-                                                <p className="text-xs text-muted-foreground mb-3">
-                                                    {new Date(quote.created_at).toLocaleDateString()}
-                                                </p>
-                                                {quote.status === 'pending' && (
+
+                                                <div className="space-y-3 mb-4 text-sm border-t border-border pt-3 mt-3">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">ID</p>
+                                                            <p className="font-mono text-xs text-muted-foreground">#{quote.id}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Fecha</p>
+                                                            <p className="text-xs">{new Date(quote.created_at).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Email</p>
+                                                            <p className="truncate text-xs" title={quote.email}>{quote.email}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Teléfono</p>
+                                                            <p className="text-xs">{quote.phone}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ubicación</p>
+                                                            <p className="text-xs">{quote.city || 'N/A'} {quote.postalCode ? `(${quote.postalCode})` : ''}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Propiedad</p>
+                                                            <p className="text-xs">{quote.propertyType || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Urgencia</p>
+                                                            <p className="text-xs">{quote.urgency || 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Presupuesto</p>
+                                                            <p className="text-xs">{quote.budget || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Contacto</p>
+                                                        <p className="text-xs">{quote.contactMethod || 'N/A'}</p>
+                                                    </div>
+
+                                                    {quote.description && (
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Descripción</p>
+                                                            <p className="bg-muted/30 p-2 rounded mt-1 text-[11px] leading-relaxed line-clamp-4">{quote.description}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex gap-2">
                                                     <Button
-                                                        onClick={() => updateQuoteStatus(quote.id, "finalizado")}
+                                                        onClick={() => handleOpenModal(quote)}
                                                         variant="outline"
                                                         size="sm"
-                                                        className="w-full text-green-600 border-green-200 hover:bg-green-50"
+                                                        className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
                                                     >
-                                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                                        Finalizar
+                                                        <Eye className="h-4 w-4 mr-1" />
+                                                        Ver
                                                     </Button>
-                                                )}
+                                                    {quote.status === 'pending' && (
+                                                        <Button
+                                                            onClick={() => updateQuoteStatus(quote.id, "finalizado")}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
+                                                        >
+                                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                                            Finalizar
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        onClick={() => deleteQuote(quote.id)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        Borrar
+                                                    </Button>
+                                                </div>
+
                                             </div>
                                         ))
                                     )}
@@ -674,49 +782,109 @@ export default function AdminDashboard() {
                                         <table className="w-full text-left text-sm">
                                             <thead>
                                                 <tr className="border-b border-border bg-muted/50">
-                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Client</th>
-                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Service</th>
-                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Status</th>
-                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider">Date</th>
-                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-right">Actions</th>
+                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Cliente</th>
+                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Ubicación y Fecha</th>
+                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Servicio</th>
+                                                    <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Detalles y Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border">
                                                 {!Array.isArray(filteredQuotes) || filteredQuotes.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
+                                                        <td colSpan={4} className="px-6 py-10 text-center text-muted-foreground">
                                                             No quote requests found with these filters.
                                                         </td>
                                                     </tr>
                                                 ) : (
                                                     filteredQuotes.map((quote) => (
-                                                        <tr key={quote.id} className="hover:bg-muted/30 transition-colors">
+                                                        <tr key={quote.id} className="hover:bg-muted/30 transition-colors align-top">
                                                             <td className="px-6 py-4">
-                                                                <div className="font-medium">{quote.fullName}</div>
-                                                                <div className="text-xs text-muted-foreground">{quote.email}</div>
+                                                                <div className="font-bold text-sm text-foreground">{quote.fullName}</div>
+                                                                <div className="text-xs text-muted-foreground mt-1">{quote.email}</div>
                                                                 <div className="text-xs text-muted-foreground">{quote.phone}</div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-muted-foreground">{quote.service}</td>
                                                             <td className="px-6 py-4">
-                                                                <span className={`rounded-full px-2 py-1 text-xs font-medium ${quote.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                                                    {quote.status === 'pending' ? 'Pendiente' : 'Finalizado'}
+                                                                <div className="text-sm font-medium">{quote.city || 'N/A'}</div>
+                                                                <div className="text-xs text-muted-foreground">{quote.postalCode || ''}</div>
+                                                                <div className="text-[11px] text-muted-foreground mt-2 border-t pt-1 border-border/50">
+                                                                    {new Date(quote.created_at).toLocaleDateString()}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium">
+                                                                    {quote.service}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-muted-foreground">
-                                                                {new Date(quote.created_at).toLocaleDateString()}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                {quote.status === 'pending' && (
+                                                            <td className="px-6 py-4">
+                                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2 mb-4">
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">ID</span>
+                                                                        <span className="text-xs font-mono">#{quote.id}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">Propiedad</span>
+                                                                        <span className="text-xs">{quote.propertyType || 'N/A'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">Urgencia</span>
+                                                                        <span className="text-xs">{quote.urgency || 'N/A'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">Presupuesto</span>
+                                                                        <span className="text-xs">{quote.budget || 'N/A'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">Contacto</span>
+                                                                        <span className="text-xs">{quote.contactMethod || 'N/A'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block">Estado</span>
+                                                                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${quote.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                                                            {quote.status === 'pending' ? 'Pendiente' : 'Finalizado'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {quote.description && (
+                                                                    <div className="mb-4 bg-muted/30 p-2 rounded-md border border-border/50">
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Descripción</span>
+                                                                        <p className="text-[11px] line-clamp-2 italic text-muted-foreground" title={quote.description}>
+                                                                            {quote.description}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="flex gap-2 pt-2 border-t border-border/50">
                                                                     <Button
-                                                                        onClick={() => updateQuoteStatus(quote.id, "finalizado")}
+                                                                        onClick={() => handleOpenModal(quote)}
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        className="gap-1 text-green-600 border-green-200 hover:bg-green-50"
+                                                                        className="h-8 text-blue-600 border-blue-200 hover:bg-blue-50 flex-1"
                                                                     >
-                                                                        <CheckCircle className="h-4 w-4" />
-                                                                        Finalizar
+                                                                        <Eye className="h-4 w-4 mr-1" />
+                                                                        Ver Más
                                                                     </Button>
-                                                                )}
+                                                                    {quote.status === 'pending' && (
+                                                                        <Button
+                                                                            onClick={() => updateQuoteStatus(quote.id, "finalizado")}
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="h-8 text-green-600 border-green-200 hover:bg-green-50 flex-1"
+                                                                        >
+                                                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                                                            Finalizar
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button
+                                                                        onClick={() => deleteQuote(quote.id)}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-8 text-red-600 border-red-200 hover:bg-red-50 flex-1"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Borrar
+                                                                    </Button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))
@@ -848,7 +1016,9 @@ export default function AdminDashboard() {
                             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold font-heading">
                                 {activeTab === "blogs"
                                     ? (editingBlog ? "Editar Blog" : "Nuevo Blog")
-                                    : (editingContractor ? "Editar Contratista" : "Nuevo Contratista")
+                                    : activeTab === "contractors"
+                                        ? (editingContractor ? "Editar Contratista" : "Nuevo Contratista")
+                                        : "Detalles del Presupuesto"
                                 }
                             </h2>
                             <button
@@ -859,208 +1029,305 @@ export default function AdminDashboard() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 lg:space-y-6">
-                            {activeTab === "blogs" ? (
-                                <>
-                                    <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="title" className="text-sm font-medium">Título</Label>
-                                            <Input
-                                                id="title"
-                                                name="title"
-                                                required
-                                                placeholder="Título del post"
-                                                value={formData.title}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="slug" className="text-sm font-medium">Slug (URL)</Label>
-                                            <Input
-                                                id="slug"
-                                                name="slug"
-                                                required
-                                                placeholder="slug-del-post"
-                                                value={formData.slug}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="category" className="text-sm font-medium">Categoría</Label>
-                                            <Input
-                                                id="category"
-                                                name="category"
-                                                required
-                                                placeholder="ej. Renovaciones"
-                                                value={formData.category}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="date" className="text-sm font-medium">Fecha</Label>
-                                            <Input
-                                                id="date"
-                                                name="date"
-                                                type="date"
-                                                required
-                                                value={formData.date}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1.5 sm:space-y-2">
-                                        <Label htmlFor="image" className="text-sm font-medium">Imagen del Blog <span className="text-xs text-muted-foreground">(Máx 250KB)</span></Label>
-                                        <Input
-                                            id="image"
-                                            name="image"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            className="cursor-pointer text-sm file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium"
-                                        />
-                                        {imagePreview && (
-                                            <div className="mt-3">
-                                                <Label className="mb-2 block text-xs font-medium">Vista previa:</Label>
-                                                <div className="aspect-video overflow-hidden rounded-lg border border-border shadow-inner bg-muted/50 max-h-48">
-                                                    <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
+                            {activeTab === "quotes" && selectedQuote && (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-primary border-b pb-1">Información del Cliente</h3>
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Nombre Completo</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.fullName}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Email</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.email}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Teléfono</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.phone}</p>
                                                 </div>
                                             </div>
-                                        )}
-                                        <p className="text-xs text-muted-foreground">
-                                            Nota: Si no seleccionas una imagen nueva, se mantendrá la actual (si existe).
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-1.5 sm:space-y-2">
-                                        <Label htmlFor="excerpt" className="text-sm font-medium">Resumen</Label>
-                                        <Textarea
-                                            id="excerpt"
-                                            name="excerpt"
-                                            required
-                                            placeholder="Breve resumen del post..."
-                                            value={formData.excerpt}
-                                            onChange={handleInputChange}
-                                            className="min-h-[80px] text-sm sm:text-base resize-none"
-                                            rows={3}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-1.5 sm:space-y-2">
-                                        <Label htmlFor="content" className="text-sm font-medium">Contenido Completo</Label>
-                                        <Textarea
-                                            id="content"
-                                            name="content"
-                                            required
-                                            placeholder="Contenido detallado del post..."
-                                            className="min-h-[150px] sm:min-h-[200px] text-sm sm:text-base resize-none"
-                                            value={formData.content}
-                                            onChange={handleInputChange}
-                                            rows={6}
-                                        />
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="nombre" className="text-sm font-medium">Nombre</Label>
-                                            <Input
-                                                id="nombre"
-                                                name="nombre"
-                                                required
-                                                placeholder="Nombre Completo"
-                                                value={contractorForm.nombre}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
                                         </div>
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="telefono" className="text-sm font-medium">Teléfono</Label>
-                                            <Input
-                                                id="telefono"
-                                                name="telefono"
-                                                placeholder="(555) 123-4567"
-                                                value={contractorForm.telefono}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
+
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-primary border-b pb-1">Ubicación y Propiedad</h3>
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Ciudad</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.city || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Código Postal</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.postalCode || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Tipo de Propiedad</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.propertyType || 'N/A'}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                                            <Input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                placeholder="email@ejemplo.com"
-                                                value={contractorForm.email}
-                                                onChange={handleInputChange}
-                                                className="text-sm sm:text-base"
-                                            />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-primary border-b pb-1">Detalles del Servicio</h3>
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Servicio solicitado</p>
+                                                    <p className="text-sm font-medium bg-primary/5 p-2 rounded">{selectedQuote.service}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Urgencia</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.urgency || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Presupuesto Estimado</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.budget || 'N/A'}</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="space-y-1.5 sm:space-y-2">
-                                            <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
-                                            <select
-                                                id="estado"
-                                                name="estado"
-                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                value={contractorForm.estado}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="activo">Activo</option>
-                                                <option value="inactivo">Inactivo</option>
-                                            </select>
+
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-primary border-b pb-1">Seguimiento</h3>
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Método de contacto</p>
+                                                    <p className="text-sm font-medium">{selectedQuote.contactMethod || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Fecha de Solicitud</p>
+                                                    <p className="text-sm font-medium">{new Date(selectedQuote.created_at).toLocaleString()}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase">Estado</p>
+                                                    <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium mt-1 ${selectedQuote.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                                                        {selectedQuote.status === 'pending' ? 'Pendiente' : 'Finalizado'}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5 sm:space-y-2">
-                                        <Label htmlFor="direccion" className="text-sm font-medium">Dirección</Label>
-                                        <Textarea
-                                            id="direccion"
-                                            name="direccion"
-                                            placeholder="Dirección completa"
-                                            value={contractorForm.direccion}
-                                            onChange={handleInputChange}
-                                            className="min-h-[80px] text-sm sm:text-base resize-none"
-                                            rows={3}
-                                        />
+                                    <div className="space-y-2 bg-muted/30 p-4 rounded-xl">
+                                        <h3 className="font-semibold text-primary uppercase text-xs tracking-wider">Descripción del Proyecto</h3>
+                                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedQuote.description || 'Sin descripción proporcionada.'}</p>
                                     </div>
-                                </>
+
+                                    <div className="flex justify-end pt-4 border-t">
+                                        <Button onClick={() => setIsModalOpen(false)} variant="outline">
+                                            Cerrar
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
 
-                            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 sm:pt-5 sticky bottom-0 bg-card pb-1 sm:pb-0 sm:static border-t border-border sm:border-0 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsModalOpen(false)}
-                                    disabled={isSubmitting}
-                                    className="w-full sm:w-auto text-sm sm:text-base"
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button type="submit" className="gap-2 w-full sm:w-auto text-sm sm:text-base" disabled={isSubmitting}>
-                                    {isSubmitting ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                            {activeTab !== "quotes" && (
+                                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 lg:space-y-6">
+                                    {activeTab === "blogs" ? (
+                                        <>
+                                            <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="title" className="text-sm font-medium">Título</Label>
+                                                    <Input
+                                                        id="title"
+                                                        name="title"
+                                                        required
+                                                        placeholder="Título del post"
+                                                        value={formData.title}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="slug" className="text-sm font-medium">Slug (URL)</Label>
+                                                    <Input
+                                                        id="slug"
+                                                        name="slug"
+                                                        required
+                                                        placeholder="slug-del-post"
+                                                        value={formData.slug}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="category" className="text-sm font-medium">Categoría</Label>
+                                                    <Input
+                                                        id="category"
+                                                        name="category"
+                                                        required
+                                                        placeholder="ej. Renovaciones"
+                                                        value={formData.category}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="date" className="text-sm font-medium">Fecha</Label>
+                                                    <Input
+                                                        id="date"
+                                                        name="date"
+                                                        type="date"
+                                                        required
+                                                        value={formData.date}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5 sm:space-y-2">
+                                                <Label htmlFor="image" className="text-sm font-medium">Imagen del Blog <span className="text-xs text-muted-foreground">(Máx 250KB)</span></Label>
+                                                <Input
+                                                    id="image"
+                                                    name="image"
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                    className="cursor-pointer text-sm file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium"
+                                                />
+                                                {imagePreview && (
+                                                    <div className="mt-3">
+                                                        <Label className="mb-2 block text-xs font-medium">Vista previa:</Label>
+                                                        <div className="aspect-video overflow-hidden rounded-lg border border-border shadow-inner bg-muted/50 max-h-48">
+                                                            <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    Nota: Si no seleccionas una imagen nueva, se mantendrá la actual (si existe).
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-1.5 sm:space-y-2">
+                                                <Label htmlFor="excerpt" className="text-sm font-medium">Resumen</Label>
+                                                <Textarea
+                                                    id="excerpt"
+                                                    name="excerpt"
+                                                    required
+                                                    placeholder="Breve resumen del post..."
+                                                    value={formData.excerpt}
+                                                    onChange={handleInputChange}
+                                                    className="min-h-[80px] text-sm sm:text-base resize-none"
+                                                    rows={3}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5 sm:space-y-2">
+                                                <Label htmlFor="content" className="text-sm font-medium">Contenido Completo</Label>
+                                                <Textarea
+                                                    id="content"
+                                                    name="content"
+                                                    required
+                                                    placeholder="Contenido detallado del post..."
+                                                    className="min-h-[150px] sm:min-h-[200px] text-sm sm:text-base resize-none"
+                                                    value={formData.content}
+                                                    onChange={handleInputChange}
+                                                    rows={6}
+                                                />
+                                            </div>
+                                        </>
                                     ) : (
-                                        <Save className="h-4 w-4" />
+                                        <>
+                                            <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="nombre" className="text-sm font-medium">Nombre</Label>
+                                                    <Input
+                                                        id="nombre"
+                                                        name="nombre"
+                                                        required
+                                                        placeholder="Nombre Completo"
+                                                        value={contractorForm.nombre}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="telefono" className="text-sm font-medium">Teléfono</Label>
+                                                    <Input
+                                                        id="telefono"
+                                                        name="telefono"
+                                                        placeholder="(555) 123-4567"
+                                                        value={contractorForm.telefono}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2">
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                                                    <Input
+                                                        id="email"
+                                                        name="email"
+                                                        type="email"
+                                                        placeholder="email@ejemplo.com"
+                                                        value={contractorForm.email}
+                                                        onChange={handleInputChange}
+                                                        className="text-sm sm:text-base"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 sm:space-y-2">
+                                                    <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
+                                                    <select
+                                                        id="estado"
+                                                        name="estado"
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        value={contractorForm.estado}
+                                                        onChange={handleInputChange}
+                                                    >
+                                                        <option value="activo">Activo</option>
+                                                        <option value="inactivo">Inactivo</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5 sm:space-y-2">
+                                                <Label htmlFor="direccion" className="text-sm font-medium">Dirección</Label>
+                                                <Textarea
+                                                    id="direccion"
+                                                    name="direccion"
+                                                    placeholder="Dirección completa"
+                                                    value={contractorForm.direccion}
+                                                    onChange={handleInputChange}
+                                                    className="min-h-[80px] text-sm sm:text-base resize-none"
+                                                    rows={3}
+                                                />
+                                            </div>
+                                        </>
                                     )}
-                                    {activeTab === "blogs"
-                                        ? (editingBlog ? "Actualizar" : "Crear Post")
-                                        : (editingContractor ? "Actualizar" : "Crear Contratista")
-                                    }
-                                </Button>
-                            </div>
-                        </form>
+
+                                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 sm:pt-5 sticky bottom-0 bg-card pb-1 sm:pb-0 sm:static border-t border-border sm:border-0 pt-4">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setIsModalOpen(false)}
+                                            disabled={isSubmitting}
+                                            className="w-full sm:w-auto text-sm sm:text-base"
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button type="submit" className="gap-2 w-full sm:w-auto text-sm sm:text-base" disabled={isSubmitting}>
+                                            {isSubmitting ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Save className="h-4 w-4" />
+                                            )}
+                                            {activeTab === "blogs"
+                                                ? (editingBlog ? "Actualizar" : "Crear Post")
+                                                : (editingContractor ? "Actualizar" : "Crear Contratista")
+                                            }
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

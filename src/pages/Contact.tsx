@@ -37,10 +37,10 @@ export default function Contact() {
                   <div>
                     <h3 className="font-semibold">Phone</h3>
                     <a
-                      href="tel:+14031234567"
+                      href="tel:+15872232483"
                       className="mt-1 block text-body hover:text-primary"
                     >
-                      (403) 123-4567
+                      +1 587-223-2483
                     </a>
                   </div>
                 </div>
@@ -52,10 +52,10 @@ export default function Contact() {
                   <div>
                     <h3 className="font-semibold">Email</h3>
                     <a
-                      href="mailto:info@ninajean.ca"
+                      href="mailto:info@ninajeanrenovations.ca"
                       className="mt-1 block text-body hover:text-primary"
                     >
-                      info@ninajean.ca
+                      info@ninajeanrenovations.ca
                     </a>
                   </div>
                 </div>

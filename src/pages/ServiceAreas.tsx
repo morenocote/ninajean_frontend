@@ -82,9 +82,8 @@ export default function ServiceAreas() {
             {areas.map((area) => (
               <div
                 key={area.name}
-                className={`card-elevated p-6 ${
-                  area.primary ? "border-2 border-primary" : ""
-                }`}
+                className={`card-elevated p-6 ${area.primary ? "border-2 border-primary" : ""
+                  }`}
               >
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -188,9 +187,9 @@ export default function ServiceAreas() {
               <Link to="/contact">Contact Us</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="tel:+14031234567" className="gap-2">
+              <a href="tel:+15872232483" className="gap-2">
                 <Phone className="h-5 w-5" />
-                Call (403) 123-4567
+                Call +1 587-223-2483
               </a>
             </Button>
           </div>

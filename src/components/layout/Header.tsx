@@ -54,9 +54,9 @@ export function Header() {
         <div className="flex h-16 items-center justify-between md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img 
-              src={logo} 
-              alt="Nina Jean Maintenance Renovation Ltd" 
+            <img
+              src={logo}
+              alt="Nina Jean Maintenance Renovation Ltd"
               className="h-12 w-auto md:h-14"
             />
           </Link>
@@ -127,7 +127,7 @@ export function Header() {
           {/* Desktop CTAs */}
           <div className="hidden items-center gap-3 lg:flex">
             <Button variant="ghost" size="sm" asChild>
-              <a href="tel:+14031234567" className="gap-2">
+              <a href="tel:+15872232483" className="gap-2">
                 <Phone className="h-4 w-4" />
                 <span className="hidden xl:inline">Call Now</span>
               </a>
@@ -140,7 +140,7 @@ export function Header() {
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 lg:hidden">
             <Button variant="default" size="sm" asChild>
-              <a href="tel:+14031234567">
+              <a href="tel:+15872232483">
                 <Phone className="h-4 w-4" />
               </a>
             </Button>

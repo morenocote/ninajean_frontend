@@ -116,7 +116,7 @@ export function EstimateForm({ preselectedService, compact = false }: EstimateFo
             id="phone"
             type="tel"
             required
-            placeholder="(403) 123-4567"
+            placeholder="+1 (587) 223-2483"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />

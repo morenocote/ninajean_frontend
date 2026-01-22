@@ -25,8 +25,8 @@ const knowledgeBase = {
   ],
   areas: ["Calgary", "Airdrie", "Cochrane", "Okotoks", "Chestermere"],
   contact: {
-    phone: "(403) 123-4567",
-    email: "info@ninajean.ca",
+    phone: "+1 587-223-2483",
+    email: "info@ninajeanrenovations.ca",
     hours: "Mon - Sat: 7:00 AM - 6:00 PM",
   },
 };
@@ -128,7 +128,7 @@ const getResponse = (message: string): string => {
     lowerMessage.includes("cost") ||
     lowerMessage.includes("how much")
   ) {
-    return "We offer free, no-obligation estimates! Fill out our estimate form on the Contact page or any service page, and we'll respond within 24-48 hours with a detailed quote. You can also call us at (403) 123-4567.";
+    return "We offer free, no-obligation estimates! Fill out our estimate form on the Contact page or any service page, and we'll respond within 24-48 hours with a detailed quote. You can also call us at +1 587-223-2483.";
   }
 
   // Hours
@@ -233,16 +233,14 @@ export function ChatBot() {
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex gap-2 ${
-                    message.role === "user" ? "flex-row-reverse" : ""
-                  }`}
+                  className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : ""
+                    }`}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
-                      message.role === "user"
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
-                    }`}
+                      }`}
                   >
                     {message.role === "user" ? (
                       <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -251,11 +249,10 @@ export function ChatBot() {
                     )}
                   </div>
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3 py-2 sm:max-w-[75%] sm:px-4 ${
-                      message.role === "user"
+                    className={`max-w-[80%] rounded-2xl px-3 py-2 sm:max-w-[75%] sm:px-4 ${message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground"
-                    }`}
+                      }`}
                   >
                     <p className="whitespace-pre-line text-xs sm:text-sm">{message.content}</p>
                   </div>
