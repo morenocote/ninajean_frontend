@@ -25,6 +25,7 @@ import deckProject from "@/assets/projects/deck-installation.jpg";
 import basementProject from "@/assets/projects/basement-renovation.jpg";
 import bathroomProject from "@/assets/projects/bathroom-renovation.jpg";
 import sidingProject from "@/assets/projects/siding-exterior.jpg";
+import servicesFoto from "@/assets/services/foto.jpeg";
 
 const recentProjects = [
   { image: kitchenProject, title: "Kitchen Renovation", location: "Calgary, AB" },
@@ -158,6 +159,13 @@ export default function Index() {
               From minor repairs to complete renovations, we offer a comprehensive range of
               maintenance and construction services.
             </p>
+            <div className="mt-8 flex justify-center">
+              <img
+                src={servicesFoto}
+                alt="Our Services"
+                className="max-w-4xl w-full rounded-2xl shadow-xl object-cover h-[300px] md:h-[400px]"
+              />
+            </div>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {services.map((service) => (
