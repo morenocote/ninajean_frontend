@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { CheckCircle, Users, Award, Clock, Shield, Target, Heart, Briefcase } from "lucide-react";
 import clientLogos from "@/assets/clients-logos.png";
+import servicesFoto from "@/assets/services/foto.jpeg";
 
 const principles = [
   {
@@ -60,19 +61,19 @@ export default function About() {
             </h2>
             <div className="mt-6 space-y-4 text-body leading-relaxed">
               <p>
-                Ninajean Services is a Calgary-based company delivering integrated cleaning, 
-                maintenance, restoration, and renovation services for residential and small 
+                Ninajean Services is a Calgary-based company delivering integrated cleaning,
+                maintenance, restoration, and renovation services for residential and small
                 commercial properties throughout the city and surrounding areas.
               </p>
               <p>
-                We understand that a home or business is more than just a building—it's where 
-                people live, work, and invest their resources. That's why we approach every 
-                project with care, professionalism, and attention to detail, whether it involves 
+                We understand that a home or business is more than just a building—it's where
+                people live, work, and invest their resources. That's why we approach every
+                project with care, professionalism, and attention to detail, whether it involves
                 routine cleaning, property maintenance, structural work, or full renovations.
               </p>
               <p>
-                By offering a wide range of services under one company, we help our clients 
-                simplify projects, reduce coordination challenges, and ensure consistent quality 
+                By offering a wide range of services under one company, we help our clients
+                simplify projects, reduce coordination challenges, and ensure consistent quality
                 from start to finish.
               </p>
             </div>
@@ -86,7 +87,7 @@ export default function About() {
           <div className="text-center">
             <h2 className="font-heading text-3xl font-bold md:text-4xl">Our Philosophy</h2>
             <p className="mx-auto mt-4 max-w-2xl text-body">
-              Our work is guided by three core principles that form the foundation of reliable 
+              Our work is guided by three core principles that form the foundation of reliable
               service and long-term client trust.
             </p>
           </div>
@@ -119,8 +120,8 @@ export default function About() {
                 Our Services Approach
               </h2>
               <p className="mt-4 text-body">
-                Our team has experience across a broad scope of services. Each project is managed 
-                with a practical, hands-on approach to ensure efficiency, clean job sites, and 
+                Our team has experience across a broad scope of services. Each project is managed
+                with a practical, hands-on approach to ensure efficiency, clean job sites, and
                 durable results.
               </p>
               <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -133,11 +134,16 @@ export default function About() {
               </div>
             </div>
             <div className="order-first lg:order-last">
-              <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 p-8 flex items-center justify-center">
+              <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 p-8">
                 <div className="text-center">
                   <Award className="mx-auto h-16 w-16 text-primary" />
                   <p className="mt-4 font-heading text-xl font-semibold">Quality First</p>
-                  <p className="mt-2 text-sm text-body">Consistent standards on every project</p>
+                  <p className="mb-6 mt-2 text-sm text-body">Consistent standards on every project</p>
+                  <img
+                    src={servicesFoto}
+                    alt="Quality Workmanship"
+                    className="h-48 md:h-72 w-full rounded-xl object-cover shadow-lg"
+                  />
                 </div>
               </div>
             </div>
@@ -158,14 +164,14 @@ export default function About() {
             <h2 className="font-heading text-3xl font-bold md:text-4xl">Our Team</h2>
             <div className="mt-6 space-y-4 text-body leading-relaxed">
               <p>
-                Ninajean Services is owned and operated by <strong>Ms. Tania Lopez</strong>, who 
-                oversees operations and client relationships. With a strong background in accounting 
-                and operations management, she brings a structured, detail-oriented approach to 
+                Ninajean Services is owned and operated by <strong>Ms. Tania Lopez</strong>, who
+                oversees operations and client relationships. With a strong background in accounting
+                and operations management, she brings a structured, detail-oriented approach to
                 every project.
               </p>
               <p>
-                Ms. Lopez works closely with a trained and adaptable team of professionals who 
-                follow established procedures and quality standards. This hands-on leadership 
+                Ms. Lopez works closely with a trained and adaptable team of professionals who
+                follow established procedures and quality standards. This hands-on leadership
                 ensures consistency, accountability, and a high level of care for every client.
               </p>
             </div>
@@ -185,9 +191,9 @@ export default function About() {
             </div>
             <h2 className="font-heading text-3xl font-bold md:text-4xl">Our Mission</h2>
             <p className="mt-6 text-lg text-body leading-relaxed">
-              Our mission is to create safe, comfortable, and well-maintained spaces through 
-              reliable cleaning, maintenance, restoration, and renovation services. We prioritize 
-              customer satisfaction by combining flexible scheduling, clear processes, and 
+              Our mission is to create safe, comfortable, and well-maintained spaces through
+              reliable cleaning, maintenance, restoration, and renovation services. We prioritize
+              customer satisfaction by combining flexible scheduling, clear processes, and
               consistent workmanship.
             </p>
           </div>
@@ -206,18 +212,18 @@ export default function About() {
             </div>
             <h2 className="font-heading text-3xl font-bold md:text-4xl">Our Clients</h2>
             <p className="mx-auto mt-4 max-w-2xl text-body">
-              We serve a diverse range of residential and small commercial clients across Calgary. 
-              We treat every client and property with the same level of diligence, care, and 
+              We serve a diverse range of residential and small commercial clients across Calgary.
+              We treat every client and property with the same level of diligence, care, and
               respect—regardless of project size.
             </p>
           </div>
-          
+
           {/* Client Logos */}
           <div className="mt-12 flex justify-center">
             <div className="rounded-2xl bg-white p-8 shadow-sm">
-              <img 
-                src={clientLogos} 
-                alt="Our trusted clients including Cité des Rocheuses, Boston Pizza, The Metropolitan, Aragon Massage, Subaru, and Capitol Chevrolet" 
+              <img
+                src={clientLogos}
+                alt="Our trusted clients including Cité des Rocheuses, Boston Pizza, The Metropolitan, Aragon Massage, Subaru, and Capitol Chevrolet"
                 className="max-w-full h-auto md:max-w-2xl"
               />
             </div>
@@ -232,7 +238,7 @@ export default function About() {
             Ready to Start Your Project?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-body">
-            Contact us today for a free, no-obligation estimate on your cleaning, maintenance, 
+            Contact us today for a free, no-obligation estimate on your cleaning, maintenance,
             or renovation project.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
