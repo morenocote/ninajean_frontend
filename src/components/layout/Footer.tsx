@@ -192,14 +192,13 @@ export function Footer() {
           {/* Created By Credit */}
           <div className="mt-4 text-center">
             <p className="text-sm text-background/50">
-              Created by{" "}
               <a
                 href="https://rcwinnovation.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                Rcw Innovation Inc
+                Website developed by Rcw Innovation
               </a>
             </p>
           </div>
